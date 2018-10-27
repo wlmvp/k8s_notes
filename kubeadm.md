@@ -1,5 +1,5 @@
 ####kubeadm###############
-
+####master内存需要2G
 
 #0.1 关掉 selinux
 setenforce  0 
@@ -94,7 +94,8 @@ export KUBECONFIG=/etc/kubernetes/admin.conf
 
 
 kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/v0.10.0/Documentation/kube-flannel.yml
-
+##      在tolerations:下面增加   - operator: Exists
+#如果有多张网卡，需要指定网卡
 containers:
       - name: kube-flannel
         image: quay.io/coreos/flannel:v0.10.0-amd64
@@ -124,5 +125,19 @@ TOKEN TTL EXPIRES USAGES DESCRIPTION EXTRA GROUPS
 openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | openssl rsa -pubin -outform der 2>/dev/null | openssl dgst -sha256 -hex | sed 's/^.* //'
 5443ce1592bb287ba362cedd3128c261c108c2c44fd48b5a60b90ee4e8460a3f
 
-节点加入集群
+#Node节点的加入集群前，首先需要按照本文的第0节和第1节做好准备工作，然后下载镜像
+#centos7修改hostname
+[root@centos7 ~]$ hostnamectl set-hostname centos77.magedu.com             # 使用这个命令会立即生效且重启也生效
+[root@centos7 ~]$ hostname                                                 # 查看下
+centos77.magedu.com
+[root@centos7 ~]$ vim /etc/hosts                                           # 编辑下hosts文件， 给127.0.0.1添加hostname
+[root@centos7 ~]$ cat /etc/hosts                                           # 检查
+127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4 centos77.magedu.com
+::1         localhost localhost.localdomain localhost6 localhost6.localdomain6
+
+docker pull registry.cn-hangzhou.aliyuncs.com/google_containers/kube-proxy-amd64:v1.12.1
+docker pull registry.cn-hangzhou.aliyuncs.com/google_containers/pause-amd64:3.1
+docker tag registry.cn-hangzhou.aliyuncs.com/google_containers/pause-amd64:3.1 k8s.gcr.io/pause-amd64:3.1
+docker tag registry.cn-hangzhou.aliyuncs.com/google_containers/kube-proxy-amd64:v1.12.1 k8s.gcr.io/kube-proxy-amd64:v1.12.1
+docker tag registry.cn-hangzhou.aliyuncs.com/google_containers/pause-amd64:3.1 k8s.gcr.io/pause:3.1
 kubeadm join --token 1eg5gp.zmys0lirp7bikh7l --discovery-token-ca-cert-hash sha256:5443ce1592bb287ba362cedd3128c261c108c2c44fd48b5a60b90ee4e8460a3f 192.168.0.93:6443 --skip-preflight-checks
